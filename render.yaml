@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: ysb-line-rich-menu-api
+    runtime: node
+    plan: starter
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    numInstances: 1
+    disk:
+      name: ysb-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: DATA_DIR
+        value: /var/data
+      - key: FRONTEND_ORIGIN
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: OWNER_EMAIL
+        sync: false
+      - key: LINE_CHANNEL_ACCESS_TOKEN
+        sync: false
