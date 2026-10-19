@@ -48,7 +48,7 @@
 
 ## 4. GitHub Pages 前端
 
-修改 public/config.js，將 window.YSB_API_BASE 設成 Render HTTPS 網址，不含 /api。提交後，在儲存庫 Settings → Pages 選 GitHub Actions；手動執行提供的 Pages workflow，之後推送 main 自動部署。
+修改 public/config.js，將 window.YSB_API_BASE 設成 Render HTTPS 網址，不含 /api。提交後，在儲存庫 Settings → Pages 選 GitHub Actions，並在 Settings → Secrets and variables → Actions → Variables 新增儲存庫變數 DEPLOY_FRONTEND=true；手動執行提供的 Pages workflow，之後推送 main 自動部署。未設定此變數前部署會跳過，避免後端尚未設定就發布網站。
 
 前端網址通常為 https://9334yang.github.io/ysb-line-rich-menu/。Google 和後端的來源設定仍是 https://9334yang.github.io。
 

@@ -12,6 +12,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   deploy:
+    if: vars.DEPLOY_FRONTEND == 'true'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
