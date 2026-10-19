@@ -4,7 +4,7 @@
 
 ## 狀態
 
-本機實作已備妥；尚未建立 GitHub 儲存庫、部署後端、設定 Google OAuth 或連線測試正式 LINE 帳號。自動測試使用模擬 LINE API。
+程式碼已上傳至 GitHub；後端部署、Google OAuth 設定及正式 LINE 整合測試尚待完成。自動測試使用模擬 LINE API。
 
 已通過 6 項本機自動測試及前端 JavaScript 語法檢查；尚未完成瀏覽器操作驗證和真實 Google／LINE 整合測試。
 

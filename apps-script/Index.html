@@ -1,0 +1,1252 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>氧身部落｜LINE 圖文選單管理</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      background: #f3f6f4;
+      color: #263b33;
+      font-family: system-ui, "Noto Sans TC", sans-serif;
+    }
+    main { max-width: 1250px; margin: auto; }
+    h1 { font-size: 25px; margin: 0 0 8px; }
+    h2 { font-size: 21px; }
+    h3 { font-size: 16px; margin: 0 0 12px; }
+    .muted { color: #68796e; font-size: 13px; }
+    .panel {
+      background: white;
+      border: 1px solid #dce7df;
+      border-radius: 16px;
+      padding: 22px;
+      margin-bottom: 18px;
+    }
+    .tabs, .actions, .tools {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    button {
+      cursor: pointer;
+      border: 1px solid #315f49;
+      background: white;
+      color: #315f49;
+      border-radius: 9px;
+      padding: 10px 15px;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 650;
+    }
+    button.primary, button.active {
+      background: #315f49;
+      color: white;
+    }
+    button.publish {
+      background: #b66b27;
+      border-color: #b66b27;
+      color: white;
+    }
+    button.danger {
+      border-color: #bc4747;
+      color: #bc4747;
+    }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .tab {
+      flex: 1;
+      border: 0;
+      background: #e9efeb;
+    }
+    .tab.active { background: #315f49; color: white; }
+    .layout {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 24px;
+    }
+    .preview {
+      width: 100%;
+      aspect-ratio: 2500 / 1686;
+      position: relative;
+      overflow: hidden;
+      background: #e5ece7;
+      border: 1px solid #cbdacf;
+      border-radius: 12px;
+    }
+    .preview img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+    }
+    .layer {
+      position: absolute;
+      inset: 0;
+      touch-action: none;
+      user-select: none;
+    }
+    .area {
+      position: absolute;
+      border: 2px dashed #ffcf55;
+      background: rgba(29, 119, 74, .20);
+      cursor: move;
+    }
+    .area.ellipse { border-radius: 50%; }
+    .area.selected {
+      border: 2px solid #ff8b1f;
+      background: rgba(31, 120, 75, .36);
+    }
+    .area-label {
+      display: inline-block;
+      max-width: 100%;
+      padding: 3px 5px;
+      background: #24573e;
+      color: white;
+      font-size: 11px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      pointer-events: none;
+    }
+    .handle {
+      position: absolute;
+      right: -7px;
+      bottom: -7px;
+      width: 15px;
+      height: 15px;
+      background: #ff8b1f;
+      border: 2px solid white;
+      border-radius: 3px;
+      cursor: nwse-resize;
+    }
+    .tool-panel {
+      padding: 15px;
+      background: #f1f7f3;
+      border: 1px solid #cbded1;
+      border-radius: 12px;
+      margin-bottom: 15px;
+    }
+    .editbox {
+      padding: 16px;
+      background: #f1f7f3;
+      border: 2px solid #315f49;
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      margin: 11px 0 5px;
+      font-size: 13px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #c8d7cd;
+      border-radius: 8px;
+      font: inherit;
+      font-size: 14px;
+    }
+    .entry {
+      padding: 12px;
+      border: 1px solid #dce7df;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+    .entry.selected {
+      background: #f1f7f3;
+      border-color: #315f49;
+    }
+    .editor-list {
+      max-height: 460px;
+      overflow-y: auto;
+    }
+    .status {
+      color: #315f49;
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+    .warning {
+      padding: 14px;
+      background: #fff8e6;
+      color: #806328;
+      border-radius: 10px;
+      font-size: 13px;
+    }
+    @media (max-width: 800px) {
+      body { padding: 12px; }
+      .layout { grid-template-columns: 1fr; }
+      .panel { padding: 15px; }
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="login" class="panel"
+     style="max-width:500px;margin:60px auto;text-align:center">
+  <h2>氧身部落｜管理員後台</h2>
+  <p id="login-status">正在確認 Google 帳號…</p>
+</div>
+
+<main id="app" style="display:none">
+
+  <h1>氧身部落｜LINE 圖文選單管理</h1>
+  <p class="muted">管理員：<span id="email"></span></p>
+
+  <div class="panel">
+
+    <div class="tabs">
+      <button id="tab-about" class="tab active"
+              onclick="switchTab('about')">關於我們</button>
+      <button id="tab-member" class="tab"
+              onclick="switchTab('member')">會員專區</button>
+    </div>
+
+    <div class="layout">
+
+      <section>
+        <h3>圖文選單圖片</h3>
+
+        <div class="preview" id="preview">
+          <img id="menu-image" alt="LINE 圖文選單圖片">
+          <div id="area-layer" class="layer"></div>
+        </div>
+
+        <p class="muted">
+          圖片尺寸 2500 × 1686。平常只顯示圖片，
+          按「新增區塊」或「編輯既有區塊」才顯示編輯框。
+        </p>
+
+        <div class="actions">
+          <button id="add-btn" class="primary"
+                  onclick="openShapeTools()">
+            ＋ 新增區塊
+          </button>
+          <button onclick="enableEditMode()">
+            編輯既有區塊
+          </button>
+          <button onclick="finishEditing()">
+            完成編輯／隱藏框線
+          </button>
+        </div>
+
+        <div id="shape-tools" class="tool-panel"
+             style="display:none">
+          <h3>選擇繪製形狀</h3>
+          <div class="tools">
+            <button id="shape-rectangle"
+                    onclick="chooseShape('rectangle')">
+              ▭ 矩形
+            </button>
+            <button id="shape-square"
+                    onclick="chooseShape('square')">
+              □ 正方形
+            </button>
+            <button id="shape-ellipse"
+                    onclick="chooseShape('ellipse')">
+              ◯ 圓形／橢圓形
+            </button>
+          </div>
+          <p class="muted" id="draw-hint">
+            請選擇形狀，然後在圖片上拖曳框選。
+          </p>
+          <button onclick="cancelDrawing()">取消新增</button>
+        </div>
+
+        <h3 style="margin-top:24px">上傳選單圖片</h3>
+        <input type="file" id="image-file"
+               accept="image/png,image/jpeg"
+               onchange="selectImage(event)">
+
+        <p class="muted">
+          PNG 或 JPG，2500 × 1686 像素，
+          檔案不得超過 1 MB。
+        </p>
+
+        <div class="actions">
+          <button id="upload-btn" class="primary"
+                  disabled onclick="uploadImage()">
+            儲存選單圖片
+          </button>
+        </div>
+
+        <p id="image-status" class="status">尚未載入圖片</p>
+      </section>
+
+      <section>
+        <h3>區塊連結設定</h3>
+
+        <div id="selected-editor" class="editbox"
+             style="display:none">
+
+          <strong id="selected-title">編輯區塊</strong>
+
+          <label for="area-name">區塊名稱</label>
+          <input id="area-name" maxlength="32"
+                 placeholder="例如：立即預約">
+
+          <label for="area-url">點擊後開啟的網址</label>
+          <input id="area-url" type="url"
+                 placeholder="https://example.com">
+
+          <p id="coordinates" class="muted"></p>
+
+          <div class="actions">
+            <button class="primary" onclick="applyArea()">
+              套用名稱與連結
+            </button>
+            <button class="danger" onclick="deleteSelected()">
+              刪除此區塊
+            </button>
+          </div>
+        </div>
+
+        <div id="empty-editor" class="muted">
+          尚未選取區塊。請按「新增區塊」後，
+          在圖片上畫出點擊範圍。
+        </div>
+
+        <div id="editor-list" class="editor-list"
+             style="display:none"></div>
+      </section>
+
+    </div>
+
+    <div class="actions" style="margin-top:24px">
+      <button id="save-btn" class="primary"
+              onclick="saveDraft()">
+        儲存區塊草稿
+      </button>
+      <button id="publish-btn" class="publish"
+              onclick="publishToLine()">
+        發布／更新至 LINE
+      </button>
+    </div>
+
+    <p id="status" class="status">正在載入…</p>
+    <p id="publish-status" class="status"></p>
+
+  </div>
+
+  <p class="warning">
+    LINE 實際點擊熱區僅支援矩形。
+    圓形與橢圓形會以外接矩形發布。
+    上方 300px 保留雙分頁切換，
+    下方區域可以自由調整位置與大小。
+  </p>
+
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+
+const W = 2500;
+const H = 1686;
+const TOP = 300;
+const MAX_AREAS = 18;
+
+const clamp = (n, min, max) =>
+  Math.min(max, Math.max(min, n));
+
+let menus = null;
+let active = 'about';
+let selected = null;
+let editMode = false;
+let drawMode = false;
+let currentShape = 'rectangle';
+let dragging = null;
+let pendingImage = null;
+let publishing = false;
+
+const images = {
+  about: null,
+  member: null
+};
+
+function escapeHTML(value) {
+  return String(value ?? '').replace(
+    /[&<>"']/g,
+    c => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[c])
+  );
+}
+
+function validUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && !!url.hostname;
+  } catch (e) {
+    return false;
+  }
+}
+
+function setStatus(message) {
+  $('status').textContent = message;
+}
+
+function initialMenus() {
+  return {
+    about: {
+      title: '關於我們',
+      items: []
+    },
+    member: {
+      title: '會員專區',
+      items: []
+    }
+  };
+}
+
+// ========================================
+// 管理員登入
+// ========================================
+
+function login() {
+  google.script.run
+    .withSuccessHandler(user => {
+      if (!user || !user.authorized) {
+        $('login-status').textContent =
+          '目前帳號沒有管理權限';
+        return;
+      }
+
+      $('email').textContent = user.email;
+      $('login').style.display = 'none';
+      $('app').style.display = 'block';
+
+      loadDraft();
+    })
+    .withFailureHandler(error => {
+      $('login-status').textContent =
+        '登入失敗：' + error.message;
+    })
+    .ysbGetCurrentGoogleUser();
+}
+
+// ========================================
+// 草稿
+// ========================================
+
+function loadDraft() {
+  google.script.run
+    .withSuccessHandler(data => {
+      menus = data || initialMenus();
+
+      for (const tab of ['about', 'member']) {
+        if (!menus[tab]) {
+          menus[tab] = initialMenus()[tab];
+        }
+
+        if (!Array.isArray(menus[tab].items)) {
+          menus[tab].items = [];
+        }
+
+        menus[tab].items.forEach((item, i) => {
+          if (!item.bounds) {
+            item.bounds = {
+              x: [0, 834, 1667][i % 3],
+              y: 300 + Math.floor(i / 3) * 693,
+              width: [834, 833, 833][i % 3],
+              height: 693
+            };
+          }
+
+          if (!item.shape) {
+            item.shape = 'rectangle';
+          }
+        });
+      }
+
+      finishEditing();
+      loadImage(active);
+      setStatus('草稿已載入');
+    })
+    .withFailureHandler(error => {
+      setStatus('草稿載入失敗：' + error.message);
+    })
+    .getMenuDraft();
+}
+
+function saveDraft() {
+  if (!menus) return;
+
+  $('save-btn').disabled = true;
+  setStatus('正在儲存草稿…');
+
+  google.script.run
+    .withSuccessHandler(result => {
+      $('save-btn').disabled = false;
+
+      setStatus(
+        '草稿儲存成功：' +
+        new Date(result.savedAt).toLocaleString('zh-TW')
+      );
+    })
+    .withFailureHandler(error => {
+      $('save-btn').disabled = false;
+      setStatus('儲存失敗：' + error.message);
+    })
+    .saveMenuDraft(menus);
+}
+
+// ========================================
+// 分頁
+// ========================================
+
+function switchTab(tab) {
+  if (!menus || !['about', 'member'].includes(tab)) {
+    return;
+  }
+
+  active = tab;
+  selected = null;
+  pendingImage = null;
+
+  $('image-file').value = '';
+  $('upload-btn').disabled = true;
+
+  finishEditing();
+  loadImage(tab);
+}
+
+function renderTabs() {
+  for (const tab of ['about', 'member']) {
+    $('tab-' + tab).classList.toggle(
+      'active',
+      tab === active
+    );
+  }
+}
+
+// ========================================
+// 編輯模式
+// ========================================
+
+function openShapeTools() {
+  if (!menus) return;
+
+  if (!images[active] && !pendingImage) {
+    alert('請先上傳或選擇選單圖片');
+    return;
+  }
+
+  if (menus[active].items.length >= MAX_AREAS) {
+    alert('此分頁已達區塊數量上限');
+    return;
+  }
+
+  editMode = true;
+  drawMode = false;
+  selected = null;
+
+  $('shape-tools').style.display = 'block';
+  $('selected-editor').style.display = 'none';
+  $('empty-editor').style.display = 'none';
+  $('editor-list').style.display = 'block';
+
+  renderAreas();
+  renderList();
+}
+
+function chooseShape(shape) {
+  currentShape = shape;
+  drawMode = true;
+  editMode = true;
+
+  for (const type of [
+    'rectangle',
+    'square',
+    'ellipse'
+  ]) {
+    $('shape-' + type).classList.toggle(
+      'active',
+      type === shape
+    );
+  }
+
+  $('draw-hint').textContent =
+    '已選擇形狀，請在圖片下方拖曳滑鼠繪製區塊。';
+
+  renderAreas();
+}
+
+function cancelDrawing() {
+  drawMode = false;
+  $('shape-tools').style.display = 'none';
+
+  if (!selected) {
+    // 不清除既有資料
+  }
+
+  renderAreas();
+}
+
+function enableEditMode() {
+  if (!menus) return;
+
+  editMode = true;
+  drawMode = false;
+
+  $('shape-tools').style.display = 'none';
+  $('editor-list').style.display = 'block';
+  $('empty-editor').style.display = 'none';
+
+  renderAreas();
+  renderList();
+
+  setStatus('已進入編輯模式，點擊既有區塊即可修改');
+}
+
+function finishEditing() {
+  editMode = false;
+  drawMode = false;
+  dragging = null;
+  selected = null;
+
+  $('shape-tools').style.display = 'none';
+  $('selected-editor').style.display = 'none';
+  $('editor-list').style.display = 'none';
+  $('empty-editor').style.display = 'block';
+
+  renderTabs();
+  renderAreas();
+
+  setStatus('已完成編輯，現在顯示乾淨圖片預覽');
+}
+
+// ========================================
+// 區塊顯示
+// ========================================
+
+function renderAreas() {
+  const layer = $('area-layer');
+
+  if (!menus || !editMode) {
+    layer.innerHTML = '';
+    layer.style.pointerEvents = 'none';
+    return;
+  }
+
+  layer.style.pointerEvents = 'auto';
+  layer.style.cursor = drawMode
+    ? 'crosshair'
+    : 'default';
+
+  layer.innerHTML = menus[active].items
+    .map((item, i) => {
+      const b = item.bounds;
+      const shape = item.shape === 'ellipse'
+        ? 'ellipse'
+        : '';
+
+      return `
+        <div
+          class="area ${shape} ${selected === i ? 'selected' : ''}"
+          data-index="${i}"
+          style="
+            left:${b.x / W * 100}%;
+            top:${b.y / H * 100}%;
+            width:${b.width / W * 100}%;
+            height:${b.height / H * 100}%;
+          "
+        >
+          <span class="area-label">
+            ${i + 1}. ${escapeHTML(item.name || '未命名')}
+          </span>
+          <i class="handle" data-resize="1"></i>
+        </div>
+      `;
+    }).join('');
+}
+
+function renderList() {
+  if (!menus || !editMode) return;
+
+  const items = menus[active].items;
+
+  $('editor-list').innerHTML = items.length
+    ? items.map((item, i) => `
+        <div class="entry ${selected === i ? 'selected' : ''}">
+          <strong>
+            區塊 ${i + 1}：
+            ${escapeHTML(item.name || '未命名')}
+          </strong>
+          <p class="muted">
+            X:${item.bounds.x}，
+            Y:${item.bounds.y}，
+            寬:${item.bounds.width}，
+            高:${item.bounds.height}
+          </p>
+          <button onclick="selectArea(${i})">
+            選取編輯
+          </button>
+        </div>
+      `).join('')
+    : '<p class="muted">尚未建立任何區塊。</p>';
+}
+
+function selectArea(index) {
+  const item = menus?.[active]?.items?.[index];
+
+  if (!item) return;
+
+  editMode = true;
+  drawMode = false;
+  selected = index;
+
+  $('shape-tools').style.display = 'none';
+  $('selected-editor').style.display = 'block';
+  $('empty-editor').style.display = 'none';
+  $('editor-list').style.display = 'block';
+
+  $('selected-title').textContent =
+    '正在編輯區塊 ' + (index + 1);
+
+  $('area-name').value = item.name || '';
+  $('area-url').value = item.url || '';
+
+  updateCoordinates();
+  renderAreas();
+  renderList();
+}
+
+function updateCoordinates() {
+  if (selected === null || !menus) return;
+
+  const item = menus[active].items[selected];
+  if (!item) return;
+
+  const b = item.bounds;
+
+  $('coordinates').textContent =
+    '位置 X：' + b.x +
+    '　Y：' + b.y +
+    '　寬：' + b.width +
+    '　高：' + b.height;
+}
+
+function applyArea() {
+  if (selected === null) return;
+
+  const name = $('area-name').value.trim();
+  const url = $('area-url').value.trim();
+
+  if (url && !validUrl(url)) {
+    alert('請輸入有效的 HTTPS 網址');
+    return;
+  }
+
+  const item = menus[active].items[selected];
+
+  item.name = name;
+  item.url = url;
+
+  renderAreas();
+  renderList();
+
+  setStatus('區塊設定已套用，請記得儲存草稿');
+}
+
+function deleteSelected() {
+  if (selected === null || !menus) return;
+
+  if (!confirm('確定刪除此區塊？')) {
+    return;
+  }
+
+  menus[active].items.splice(selected, 1);
+
+  selected = null;
+  $('selected-editor').style.display = 'none';
+
+  renderAreas();
+  renderList();
+
+  setStatus('區塊已刪除，請儲存草稿');
+}
+
+// ========================================
+// 滑鼠座標
+// ========================================
+
+function getPoint(event) {
+  const rect = $('area-layer').getBoundingClientRect();
+
+  return {
+    x: clamp(
+      Math.round(
+        (event.clientX - rect.left) /
+        rect.width * W
+      ),
+      0,
+      W
+    ),
+    y: clamp(
+      Math.round(
+        (event.clientY - rect.top) /
+        rect.height * H
+      ),
+      TOP,
+      H
+    )
+  };
+}
+
+// ========================================
+// 自由繪製、移動、縮放
+// ========================================
+
+$('area-layer').addEventListener(
+  'pointerdown',
+  event => {
+    if (
+      !menus ||
+      !editMode ||
+      event.button !== 0
+    ) return;
+
+    const point = getPoint(event);
+    const target = event.target.closest('.area');
+
+    let mode;
+    let index;
+    let original = null;
+
+    if (drawMode) {
+      if (menus[active].items.length >= MAX_AREAS) {
+        alert('已達區塊數量上限');
+        return;
+      }
+
+      mode = 'draw';
+
+      index = menus[active].items.push({
+        name: '',
+        url: '',
+        shape: currentShape,
+        bounds: {
+          x: point.x,
+          y: point.y,
+          width: 1,
+          height: 1
+        }
+      }) - 1;
+
+      selected = index;
+    } else if (target) {
+      index = Number(target.dataset.index);
+
+      original = {
+        ...menus[active].items[index].bounds
+      };
+
+      mode = event.target.dataset.resize
+        ? 'resize'
+        : 'move';
+
+      selected = index;
+    } else {
+      selected = null;
+      $('selected-editor').style.display = 'none';
+      renderAreas();
+      renderList();
+      return;
+    }
+
+    event.preventDefault();
+
+    dragging = {
+      mode,
+      index,
+      start: point,
+      original
+    };
+
+    $('area-layer').setPointerCapture(event.pointerId);
+    renderAreas();
+  }
+);
+
+$('area-layer').addEventListener(
+  'pointermove',
+  event => {
+    if (!dragging || !menus) return;
+
+    const point = getPoint(event);
+    const d = dragging;
+
+    const item = menus[active].items[d.index];
+    if (!item) return;
+
+    const b = item.bounds;
+
+    if (d.mode === 'draw') {
+      let x1 = Math.min(d.start.x, point.x);
+      let y1 = Math.min(d.start.y, point.y);
+      let width = Math.abs(point.x - d.start.x);
+      let height = Math.abs(point.y - d.start.y);
+
+      if (item.shape === 'square') {
+        const size = Math.min(width, height);
+        width = size;
+        height = size;
+
+        x1 = point.x < d.start.x
+          ? d.start.x - size
+          : d.start.x;
+
+        y1 = point.y < d.start.y
+          ? d.start.y - size
+          : d.start.y;
+      }
+
+      b.x = x1;
+      b.y = y1;
+      b.width = Math.max(1, width);
+      b.height = Math.max(1, height);
+    }
+
+    if (d.mode === 'move') {
+      b.x = clamp(
+        d.original.x + point.x - d.start.x,
+        0,
+        W - b.width
+      );
+
+      b.y = clamp(
+        d.original.y + point.y - d.start.y,
+        TOP,
+        H - b.height
+      );
+    }
+
+    if (d.mode === 'resize') {
+      let width = clamp(
+        d.original.width + point.x - d.start.x,
+        1,
+        W - b.x
+      );
+
+      let height = clamp(
+        d.original.height + point.y - d.start.y,
+        1,
+        H - b.y
+      );
+
+      if (item.shape === 'square') {
+        const size = Math.min(width, height);
+        width = size;
+        height = size;
+      }
+
+      b.width = width;
+      b.height = height;
+    }
+
+    renderAreas();
+  }
+);
+
+function finishDrag() {
+  if (!dragging || !menus) return;
+
+  const d = dragging;
+  const item = menus[active].items[d.index];
+
+  dragging = null;
+
+  if (!item) return;
+
+  if (
+    d.mode === 'draw' &&
+    (
+      item.bounds.width < 5 ||
+      item.bounds.height < 5
+    )
+  ) {
+    menus[active].items.splice(d.index, 1);
+    selected = null;
+    renderAreas();
+    renderList();
+    return;
+  }
+
+  drawMode = false;
+  selectArea(d.index);
+
+  setStatus('區塊位置已更新，請記得儲存草稿');
+}
+
+$('area-layer').addEventListener(
+  'pointerup',
+  finishDrag
+);
+
+$('area-layer').addEventListener(
+  'pointercancel',
+  finishDrag
+);
+
+// ========================================
+// 圖片載入
+// ========================================
+
+function showImage(dataUrl) {
+  $('menu-image').src = dataUrl;
+  $('menu-image').style.display = 'block';
+}
+
+function loadImage(tab) {
+  $('image-status').textContent = '正在載入圖片…';
+
+  if (images[tab]) {
+    showImage(images[tab]);
+    $('image-status').textContent = '圖片已載入';
+    return;
+  }
+
+  $('menu-image').style.display = 'none';
+
+  google.script.run
+    .withSuccessHandler(data => {
+      if (active !== tab) return;
+
+      if (data && data.dataUrl) {
+        images[tab] = data.dataUrl;
+        showImage(data.dataUrl);
+
+        $('image-status').textContent =
+          '已載入圖片：' + data.name;
+      } else {
+        $('image-status').textContent =
+          '此分頁尚未上傳圖片';
+      }
+    })
+    .withFailureHandler(error => {
+      if (active !== tab) return;
+
+      $('image-status').textContent =
+        '圖片讀取失敗：' + error.message;
+    })
+    .ysbGetMenuImageData(tab);
+}
+
+// ========================================
+// 圖片選擇
+// ========================================
+
+function selectImage(event) {
+  const file = event.target.files[0];
+
+  if (!file) return;
+
+  if (!['image/png', 'image/jpeg'].includes(file.type)) {
+    alert('僅支援 PNG 或 JPG');
+    return;
+  }
+
+  if (file.size > 1024 * 1024) {
+    alert('圖片不得超過 1 MB');
+    return;
+  }
+
+  const tab = active;
+  const reader = new FileReader();
+
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    const image = new Image();
+
+    image.onload = () => {
+      if (
+        image.naturalWidth !== W ||
+        image.naturalHeight !== H
+      ) {
+        alert('圖片必須是 2500 × 1686 像素');
+        return;
+      }
+
+      if (active !== tab) return;
+
+      pendingImage = {
+        tab,
+        dataUrl,
+        name: file.name
+      };
+
+      showImage(dataUrl);
+
+      $('upload-btn').disabled = false;
+
+      $('image-status').textContent =
+        '圖片已預覽，尚未儲存';
+    };
+
+    image.onerror = () => {
+      alert('圖片讀取失敗');
+    };
+
+    image.src = dataUrl;
+  };
+
+  reader.readAsDataURL(file);
+}
+
+// ========================================
+// 圖片上傳
+// ========================================
+
+function uploadImage() {
+  if (!pendingImage) return;
+
+  const image = pendingImage;
+
+  $('upload-btn').disabled = true;
+  $('image-status').textContent = '正在上傳圖片…';
+
+  google.script.run
+    .withSuccessHandler(result => {
+      images[image.tab] = image.dataUrl;
+      pendingImage = null;
+
+      $('image-file').value = '';
+
+      $('image-status').textContent =
+        '圖片儲存成功：' + result.name;
+    })
+    .withFailureHandler(error => {
+      $('upload-btn').disabled = false;
+
+      $('image-status').textContent =
+        '圖片上傳失敗：' + error.message;
+    })
+    .ysbUploadMenuImage(
+      image.tab,
+      image.dataUrl,
+      image.name
+    );
+}
+
+// ========================================
+// 發布檢查
+// ========================================
+
+function validateMenus() {
+  for (const tab of ['about', 'member']) {
+    const title = tab === 'about'
+      ? '關於我們'
+      : '會員專區';
+
+    const items = menus[tab].items;
+
+    if (!items.length) {
+      alert(title + '尚未建立點擊區塊');
+      return false;
+    }
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+
+      if (
+        !item.name.trim() ||
+        !validUrl(item.url)
+      ) {
+        alert(
+          title +
+          '第 ' + (i + 1) +
+          ' 個區塊尚未設定完整'
+        );
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+// ========================================
+// 發布 LINE
+// ========================================
+
+function publishToLine() {
+  if (publishing || !menus) return;
+
+  if (pendingImage) {
+    alert('請先儲存目前上傳的圖片');
+    return;
+  }
+
+  if (!validateMenus()) return;
+
+  if (!confirm(
+    '確定發布至 LINE 嗎？\n' +
+    '這會更新目前正式使用的圖文選單。'
+  )) {
+    return;
+  }
+
+  publishing = true;
+
+  $('publish-btn').disabled = true;
+  $('publish-btn').textContent = '發布中…';
+
+  $('publish-status').textContent =
+    '正在建立新版 LINE 圖文選單，請勿關閉頁面。';
+
+  google.script.run
+    .withSuccessHandler(result => {
+      publishing = false;
+
+      $('publish-btn').disabled = false;
+      $('publish-btn').textContent =
+        '發布／更新至 LINE';
+
+      if (!result || !result.ok) {
+        $('publish-status').textContent =
+          '發布結果異常，請檢查執行記錄';
+        return;
+      }
+
+      $('publish-status').textContent =
+        'LINE 發布完成：' +
+        new Date(result.publishedAt)
+          .toLocaleString('zh-TW');
+
+      setStatus('草稿已儲存');
+
+      alert('LINE 圖文選單發布完成');
+    })
+    .withFailureHandler(error => {
+      publishing = false;
+
+      $('publish-btn').disabled = false;
+      $('publish-btn').textContent =
+        '發布／更新至 LINE';
+
+      $('publish-status').textContent =
+        '發布失敗：' + error.message;
+
+      alert(
+        'LINE 發布失敗：\n' +
+        error.message
+      );
+    })
+    .ysbPublishFromAdmin(menus);
+}
+
+window.addEventListener('load', login);
+</script>
+
+</body>
+</html>
